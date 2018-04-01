@@ -1,0 +1,20 @@
+{
+  "name": "ka-youtubesearch",
+  "version": "1.0.0",
+  "description": "CKEditor plugin to search for YouTube videos",
+  "main": "plugin.js",
+  "author": "Karen Ananiev",
+  "license": "MIT",
+  "scripts": {
+    "lint": "yarn eslint .",
+    "lint:fix": "yarn lint --fix"
+  },
+  "devDependencies": {
+    "babel-eslint": "8.2.2",
+    "eslint": "^4.19.1",
+    "eslint-config-last": "0.0.5",
+    "eslint-config-prettier": "2.9.0",
+    "eslint-plugin-prettier": "2.6.0",
+    "prettier": "^1.11.1"
+  }
+}
