@@ -1,6 +1,7 @@
 import { YouTubeError } from './youtubeError.js';
 
 const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3/search?';
+const REQUEST_TIMEOUT = 5000;
 
 /**
  * @param {Object} params - Query string params
@@ -19,16 +20,30 @@ function makeQueryString(params = {}) {
  * @returns {Promise}
  */
 function makeApiRequest(options = {}) {
-    return fetch(YOUTUBE_API_URL + makeQueryString(options))
-        .then(resp => {
-            return resp.json();
-        })
-        .then(data => {
-            if (data.error) {
-                throw new YouTubeError(data.error);
-            }
-            return data;
-        });
+    const requestTimeout = options.timeout || REQUEST_TIMEOUT;
+    delete options.timeout;
+
+    let timeoutId;
+    const timeout = new Promise((resolve, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(new Error('Request timeout.'));
+        }, requestTimeout);
+    });
+
+    const request = fetch(YOUTUBE_API_URL + makeQueryString(options)).then(resp => {
+        clearTimeout(timeoutId);
+        if (!resp.ok) {
+            return resp.json().then(data => {
+                if (data && data.error) {
+                    throw new YouTubeError(data.error);
+                }
+                throw new Error(resp.statusText);
+            });
+        }
+        return resp.json();
+    });
+
+    return Promise.race([request, timeout]);
 }
 
 /**
@@ -43,7 +58,7 @@ async function* search(options = {}) {
         if (nextPageToken) {
             options.pageToken = nextPageToken;
         }
-        let result = await makeApiRequest(options);
+        const result = await makeApiRequest(options);
         nextPageToken = result.nextPageToken;
         etag = result.etag;
         yield result;
@@ -77,9 +92,12 @@ export class YoutubeSearch {
     async search(query) {
         if (!this._lastQuery || query !== this._lastQuery) {
             this._lastQuery = query;
-            this._gen = search({ ...this.options, q: query });
+            this._gen = search({
+                ...this.options,
+                q: query
+            });
         }
-        let data = await this._gen.next();
+        const data = await this._gen.next();
         return data.done ? [] : data.value.items;
     }
 }
