@@ -1,76 +1,32 @@
 import { YouTubeError } from './youtubeError.js';
 
-const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3/search?';
-const REQUEST_TIMEOUT = 5000;
-
-/**
- * @param {Object} params - Query string params
- * @returns {String}
- */
-function makeQueryString(params = {}) {
-    return Object.keys(params)
-        .map(param => `${param}=` + encodeURIComponent(params[param]))
-        .join('&');
-}
-
-/**
- * Make request to YouTube API
- * @link https://developers.google.com/youtube/v3/docs/search/list
- * @param {Object} options - Parameters the request should be performed with
- * @returns {Promise}
- */
-function makeApiRequest(options = {}) {
-    const requestTimeout = options.timeout || REQUEST_TIMEOUT;
-    delete options.timeout;
-
-    let timeoutId;
-    const timeout = new Promise((resolve, reject) => {
-        timeoutId = setTimeout(() => {
-            reject(new Error('Request timeout.'));
-        }, requestTimeout);
-    });
-
-    const request = fetch(YOUTUBE_API_URL + makeQueryString(options)).then(resp => {
-        clearTimeout(timeoutId);
-        if (!resp.ok) {
-            return resp.json().then(data => {
-                if (data && data.error) {
-                    throw new YouTubeError(data.error);
-                }
-                throw new Error(resp.statusText);
-            });
-        }
-        return resp.json();
-    });
-
-    return Promise.race([request, timeout]);
-}
-
-/**
- * This function returns a generator. Each iteration returns the next page.
- * @param {Object} options - YouTube API parameters
- * @returns {Generator}
- */
-async function* search(options = {}) {
-    let etag;
-    let nextPageToken = options.pageToken;
-    while (!etag || nextPageToken) {
-        if (nextPageToken) {
-            options.pageToken = nextPageToken;
-        }
-        const result = await makeApiRequest(options);
-        nextPageToken = result.nextPageToken;
-        etag = result.etag;
-        yield result;
-    }
-}
-
 export class YoutubeSearch {
+    static get API_URL() {
+        return 'https://www.googleapis.com/youtube/v3/search?';
+    }
+
+    static get REQUEST_TIMEOUT() {
+        return 5000;
+    }
+
+    /**
+     * @param {Object} params - Query string params
+     * @returns {String}
+     */
+    static makeQueryString(params = {}) {
+        return Object.keys(params)
+            .map(param => `${param}=` + encodeURIComponent(params[param]))
+            .join('&');
+    }
+
     /**
      * @param {Object} options - YouTube API parameters
      */
     constructor(options = {}) {
-        this.options = options;
+        this.options = { ...options };
+
+        this._requestTimeout = options.timeout || YoutubeSearch.REQUEST_TIMEOUT;
+        delete options.timeout;
 
         /**
          * @private
@@ -80,7 +36,7 @@ export class YoutubeSearch {
         /**
          * @private
          */
-        this._lastQuery = null;
+        this._query = null;
     }
 
     /**
@@ -90,14 +46,60 @@ export class YoutubeSearch {
      * @returns {Promise}
      */
     async search(query) {
-        if (!this._lastQuery || query !== this._lastQuery) {
-            this._lastQuery = query;
-            this._gen = search({
-                ...this.options,
-                q: query
-            });
+        if (!this._query || query !== this._query) {
+            this._query = query;
+            this._gen = this._getSearchResultGenerator();
         }
         const data = await this._gen.next();
         return data.done ? [] : data.value.items;
+    }
+
+    /**
+     * This function returns a generator. Each iteration returns the next page.
+     * @returns {Generator}
+     */
+    async* _getSearchResultGenerator() { // eslint-disable-line prettier/prettier
+        let etag;
+        let nextPageToken = this.options.pageToken;
+        const options = { ...this.options, q: this._query };
+        while (!etag || nextPageToken) {
+            if (nextPageToken) {
+                options.pageToken = nextPageToken;
+            }
+            const result = await this._makeApiRequest(options);
+            nextPageToken = result.nextPageToken;
+            etag = result.etag;
+            yield result;
+        }
+    }
+
+    /**
+     * Make request to YouTube API
+     * @link https://developers.google.com/youtube/v3/docs/search/list
+     * @param {Object} options - Parameters the request should be performed with
+     * @returns {Promise}
+     */
+    _makeApiRequest(options = {}) {
+        let timeoutId;
+        const timeout = new Promise((resolve, reject) => {
+            timeoutId = setTimeout(() => {
+                reject(new Error('Request timeout.'));
+            }, this._requestTimeout);
+        });
+
+        const request = fetch(YoutubeSearch.API_URL + YoutubeSearch.makeQueryString(options)).then(resp => {
+            clearTimeout(timeoutId);
+            if (!resp.ok) {
+                return resp.json().then(data => {
+                    if (data && data.error) {
+                        throw new YouTubeError(data.error);
+                    }
+                    throw new Error(resp.statusText);
+                });
+            }
+            return resp.json();
+        });
+
+        return Promise.race([request, timeout]);
     }
 }
