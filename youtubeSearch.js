@@ -79,27 +79,22 @@ export class YoutubeSearch {
      * @param {Object} options - Parameters the request should be performed with
      * @returns {Promise}
      */
-    _makeApiRequest(options = {}) {
-        let timeoutId;
-        const timeout = new Promise((resolve, reject) => {
-            timeoutId = setTimeout(() => {
-                reject(new Error('Request timeout.'));
-            }, this._requestTimeout);
-        });
+    async _makeApiRequest(options = {}) {
+        const timeoutId = setTimeout(() => {
+            throw new Error('Request timeout.');
+        }, this._requestTimeout);
 
-        const request = fetch(YoutubeSearch.API_URL + YoutubeSearch.makeQueryString(options)).then(resp => {
-            clearTimeout(timeoutId);
-            if (!resp.ok) {
-                return resp.json().then(data => {
-                    if (data && data.error) {
-                        throw new YouTubeError(data.error);
-                    }
-                    throw new Error(resp.statusText);
-                });
+        const resp = await fetch(YoutubeSearch.API_URL + YoutubeSearch.makeQueryString(options));
+
+        clearTimeout(timeoutId);
+
+        const data = await resp.json();
+        if (!resp.ok) {
+            if (data && data.error) {
+                throw new YouTubeError(data.error);
             }
-            return resp.json();
-        });
-
-        return Promise.race([request, timeout]);
+            throw new Error(resp.statusText);
+        }
+        return data;
     }
 }
