@@ -1,5 +1,7 @@
 import { YouTubeError } from './youtubeError.js';
 
+const isAbortControllerSupported = typeof AbortController === 'function';
+
 export class YoutubeSearch {
     static get API_URL() {
         return 'https://www.googleapis.com/youtube/v3/search?';
@@ -25,8 +27,16 @@ export class YoutubeSearch {
     constructor(options = {}) {
         this.options = { ...options };
 
-        this._requestTimeout = options.timeout || YoutubeSearch.REQUEST_TIMEOUT;
-        delete options.timeout;
+        /**
+         * @private
+         */
+        this._requestTimeout = 'timeout' in options ? options.timeout : YoutubeSearch.REQUEST_TIMEOUT;
+        delete this.options.timeout;
+
+        /**
+         * @private
+         */
+        this._query = null;
 
         /**
          * @private
@@ -36,7 +46,7 @@ export class YoutubeSearch {
         /**
          * @private
          */
-        this._query = null;
+        this._abortController = null;
     }
 
     /**
@@ -55,8 +65,19 @@ export class YoutubeSearch {
     }
 
     /**
+     * Abort the current search request
+     */
+    abort() {
+        if (this._abortController) {
+            this._abortController.abort();
+            this._abortController = null;
+        }
+    }
+
+    /**
      * This function returns a generator. Each iteration returns the next page.
      * @returns {Generator}
+     * @private
      */
     async* _getSearchResultGenerator() { // eslint-disable-line prettier/prettier
         let etag;
@@ -78,22 +99,33 @@ export class YoutubeSearch {
      * @link https://developers.google.com/youtube/v3/docs/search/list
      * @param {Object} options - Parameters the request should be performed with
      * @returns {Promise}
+     * @private
      */
     async _makeApiRequest(options = {}) {
-        const timeoutId = setTimeout(() => {
-            throw new Error('Request timeout.');
-        }, this._requestTimeout);
+        let timeoutId;
+        const timeout = new Promise((resolve, reject) => {
+            timeoutId = setTimeout(() => {
+                reject(new Error('Request timeout.'));
+            }, this._requestTimeout);
+        });
 
-        const resp = await fetch(YoutubeSearch.API_URL + YoutubeSearch.makeQueryString(options));
+        if (!this._abortController && isAbortControllerSupported) {
+            this._abortController = new AbortController();
+        }
+
+        const signal = this._abortController && this._abortController.signal;
+        const url = YoutubeSearch.API_URL + YoutubeSearch.makeQueryString(options);
+
+        const response = await Promise.race([fetch(url, { signal }), timeout]);
 
         clearTimeout(timeoutId);
 
-        const data = await resp.json();
-        if (!resp.ok) {
+        const data = await response.json();
+        if (!response.ok) {
             if (data && data.error) {
                 throw new YouTubeError(data.error);
             }
-            throw new Error(resp.statusText);
+            throw new Error(response.statusText);
         }
         return data;
     }
