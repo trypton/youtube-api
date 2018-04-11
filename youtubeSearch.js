@@ -38,7 +38,7 @@ export class YoutubeSearch {
         /**
          * @private
          */
-        this._requestTimeout = 'timeout' in options ? options.timeout : YoutubeSearch.REQUEST_TIMEOUT;
+        this._requestTimeout = 'timeout' in this.options ? this.options.timeout : YoutubeSearch.REQUEST_TIMEOUT;
         delete this.options.timeout;
 
         /**
@@ -69,8 +69,8 @@ export class YoutubeSearch {
             this._query = query;
             this._gen = this._getSearchResultGenerator();
         }
-        const data = await this._gen.next();
-        return data.done ? [] : data.value.items;
+        const { done, value } = await this._gen.next();
+        return done ? [] : value.items;
     }
 
     /**
@@ -90,15 +90,27 @@ export class YoutubeSearch {
      * @returns {Generator}
      * @private
      */
-    async* _getSearchResultGenerator() { // eslint-disable-line prettier/prettier
+    async *_getSearchResultGenerator() {
         let etag;
         let nextPageToken = this.options.pageToken;
-        const options = { ...this.options, q: this._query };
+
+        const params = {
+            ...this.options,
+            q: this._query
+        };
+
         while (!etag || nextPageToken) {
             if (nextPageToken) {
-                options.pageToken = nextPageToken;
+                params.pageToken = nextPageToken;
             }
-            const result = await this._makeApiRequest(options);
+
+            const result = await this._makeApiRequest(params);
+
+            // Finish the generator if no result was returned
+            if (!result) {
+                return;
+            }
+
             nextPageToken = result.nextPageToken;
             etag = result.etag;
             yield result;
@@ -107,11 +119,11 @@ export class YoutubeSearch {
 
     /**
      * Make request to [YouTube API]{@link https://developers.google.com/youtube/v3/docs/search/list}
-     * @param {Object} options - Parameters the request should be performed with
+     * @param {Object} params - Parameters the request should be performed with
      * @returns {Promise}
      * @private
      */
-    async _makeApiRequest(options = {}) {
+    async _makeApiRequest(params = {}) {
         let timeoutId;
         const timeout = new Promise((resolve, reject) => {
             timeoutId = setTimeout(() => {
@@ -124,19 +136,30 @@ export class YoutubeSearch {
         }
 
         const signal = this._abortController && this._abortController.signal;
-        const url = YoutubeSearch.API_URL + YoutubeSearch.makeQueryString(options);
+        const url = YoutubeSearch.API_URL + YoutubeSearch.makeQueryString(params);
 
-        const response = await Promise.race([fetch(url, { signal }), timeout]);
+        let response;
+        try {
+            response = await Promise.race([fetch(url, { signal }), timeout]);
+        } catch (e) {
+            // Ignore errors caused by aborting request
+            if (e.name === 'AbortError') {
+                return Promise.resolve();
+            }
+            throw e;
+        }
 
         clearTimeout(timeoutId);
 
         const data = await response.json();
+
         if (!response.ok) {
             if (data && data.error) {
                 throw new YouTubeError(data.error);
             }
             throw new Error(response.statusText);
         }
+
         return data;
     }
 }
