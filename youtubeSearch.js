@@ -3,10 +3,16 @@ import { YouTubeError } from './youtubeError.js';
 const isAbortControllerSupported = typeof AbortController === 'function';
 
 export class YoutubeSearch {
+    /**
+     * @static
+     */
     static get API_URL() {
         return 'https://www.googleapis.com/youtube/v3/search?';
     }
 
+    /**
+     * @static
+     */
     static get REQUEST_TIMEOUT() {
         return 5000;
     }
@@ -14,6 +20,7 @@ export class YoutubeSearch {
     /**
      * @param {Object} params - Query string params
      * @returns {String}
+     * @static
      */
     static makeQueryString(params = {}) {
         return Object.keys(params)
@@ -23,6 +30,7 @@ export class YoutubeSearch {
 
     /**
      * @param {Object} options - YouTube API parameters
+     * @constructor
      */
     constructor(options = {}) {
         this.options = { ...options };
@@ -54,6 +62,7 @@ export class YoutubeSearch {
      * Each call with the same query string returns next page.
      * @param {String} query - Query search string
      * @returns {Promise}
+     * @public
      */
     async search(query) {
         if (!this._query || query !== this._query) {
@@ -65,7 +74,8 @@ export class YoutubeSearch {
     }
 
     /**
-     * Abort the current search request
+     * Abort the current search request.
+     * @public
      */
     abort() {
         if (this._abortController) {
@@ -76,6 +86,7 @@ export class YoutubeSearch {
 
     /**
      * This function returns a generator. Each iteration returns the next page.
+     * @yields {Promise} Promise that resolves to response from YouTube API
      * @returns {Generator}
      * @private
      */
@@ -95,8 +106,7 @@ export class YoutubeSearch {
     }
 
     /**
-     * Make request to YouTube API
-     * @link https://developers.google.com/youtube/v3/docs/search/list
+     * Make request to [YouTube API]{@link https://developers.google.com/youtube/v3/docs/search/list}
      * @param {Object} options - Parameters the request should be performed with
      * @returns {Promise}
      * @private
