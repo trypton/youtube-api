@@ -1,8 +1,8 @@
 {
-  "name": "ka-youtubesearch",
-  "version": "1.0.0",
-  "description": "CKEditor plugin to search for YouTube videos",
-  "main": "plugin.js",
+  "name": "youtubesearch",
+  "version": "0.1.0",
+  "description": "YouTube video search ES6 module",
+  "main": "youtubeSearch.js",
   "author": "Karen Ananiev",
   "license": "MIT",
   "scripts": {
