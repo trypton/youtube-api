@@ -6,6 +6,7 @@ import YouTubeApi from './YouTubeApi.js';
 
 /**
  * @class Creates YouTube search object
+ * @link https://developers.google.com/youtube/v3/docs/search/list
  * @extends YouTubeApi
  */
 export default class YouTubeSearch extends YouTubeApi {
@@ -31,7 +32,7 @@ export default class YouTubeSearch extends YouTubeApi {
      * YouTube API search URL
      */
     get url() {
-        return 'https://www.googleapis.com/youtube/v3/search?';
+        return 'https://www.googleapis.com/youtube/v3/search';
     }
 
     /**

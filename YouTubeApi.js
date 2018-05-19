@@ -92,7 +92,7 @@ export default class YouTubeApi {
         }
 
         const signal = this._abortController && this._abortController.signal;
-        const url = this.url + YouTubeApi.makeQueryString(params);
+        const url = this.url + '?' + YouTubeApi.makeQueryString(params);
 
         let response;
         try {
