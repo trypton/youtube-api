@@ -20,12 +20,12 @@ export default class YouTubeSearch extends YouTubeApi {
         /**
          * @private
          */
-        this._query = null;
+        this.query = null;
 
         /**
          * @private
          */
-        this._gen = null;
+        this.gen = null;
     }
 
     /**
@@ -43,11 +43,11 @@ export default class YouTubeSearch extends YouTubeApi {
      * @public
      */
     async search(query) {
-        if (!this._query || query !== this._query) {
-            this._query = query;
-            this._gen = this._getSearchResultGenerator();
+        if (!this.query || query !== this.query) {
+            this.query = query;
+            this.gen = this.getSearchResultGenerator();
         }
-        const { done, value } = await this._gen.next();
+        const { done, value } = await this.gen.next();
         return done ? [] : value.items;
     }
 
@@ -57,13 +57,13 @@ export default class YouTubeSearch extends YouTubeApi {
      * @returns {Generator}
      * @private
      */
-    async *_getSearchResultGenerator() {
+    async *getSearchResultGenerator() {
         let etag;
         let nextPageToken = this.options.pageToken;
 
         const params = {
             ...this.options,
-            q: this._query
+            q: this.query
         };
 
         while (!etag || nextPageToken) {
@@ -71,7 +71,7 @@ export default class YouTubeSearch extends YouTubeApi {
                 params.pageToken = nextPageToken;
             }
 
-            const result = await this._makeApiRequest(params);
+            const result = await this.makeApiRequest(params);
 
             // Finish the generator if no result was returned
             if (!result) {

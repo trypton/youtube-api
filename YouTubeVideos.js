@@ -60,6 +60,6 @@ export default class YouTubeVideos extends YouTubeApi {
             id: id.join(',')
         };
 
-        return this._makeApiRequest(params);
+        return this.makeApiRequest(params);
     }
 }

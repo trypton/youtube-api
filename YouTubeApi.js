@@ -44,13 +44,13 @@ export default class YouTubeApi {
         /**
          * @private
          */
-        this._requestTimeout = 'timeout' in this.options ? this.options.timeout : YouTubeApi.REQUEST_TIMEOUT;
+        this.requestTimeout = 'timeout' in this.options ? this.options.timeout : YouTubeApi.REQUEST_TIMEOUT;
         delete this.options.timeout;
 
         /**
          * @private
          */
-        this._abortController = null;
+        this.abortController = null;
     }
 
     /**
@@ -67,9 +67,9 @@ export default class YouTubeApi {
      * @public
      */
     abort() {
-        if (this._abortController) {
-            this._abortController.abort();
-            this._abortController = null;
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
         }
     }
 
@@ -79,19 +79,19 @@ export default class YouTubeApi {
      * @returns {Promise}
      * @private
      */
-    async _makeApiRequest(params = {}) {
+    async makeApiRequest(params = {}) {
         let timeoutId;
         const timeout = new Promise((resolve, reject) => {
             timeoutId = setTimeout(() => {
                 reject(new Error('Request timeout.'));
-            }, this._requestTimeout);
+            }, this.requestTimeout);
         });
 
-        if (!this._abortController && isAbortControllerSupported) {
-            this._abortController = new AbortController();
+        if (!this.abortController && isAbortControllerSupported) {
+            this.abortController = new AbortController();
         }
 
-        const signal = this._abortController && this._abortController.signal;
+        const signal = this.abortController && this.abortController.signal;
         const url = this.url + '?' + YouTubeApi.makeQueryString(params);
 
         let response;
