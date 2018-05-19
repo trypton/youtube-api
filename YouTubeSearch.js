@@ -2,7 +2,7 @@
  * @file Perform search through YouTube videos
  */
 
-import { YouTubeError } from './YouTubeError.js';
+import { YouTubeApiError } from './YouTubeApiError.js';
 
 const isAbortControllerSupported = typeof AbortController === 'function';
 
@@ -164,7 +164,7 @@ export default class YouTubeSearch {
 
         if (!response.ok) {
             if (data && data.error) {
-                throw new YouTubeError(data.error);
+                throw new YouTubeApiError(data.error);
             }
             throw new Error(response.statusText);
         }
