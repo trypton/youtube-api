@@ -1,16 +1,17 @@
 {
-  "name": "youtubesearch",
+  "name": "youtube-api",
   "version": "0.1.0",
-  "description": "YouTube video search ES6 module",
-  "main": "youtubeSearch.js",
+  "description": "YouTube API library",
+  "main": "main.js",
   "author": "Karen Ananiev",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/trypton/youtubesearch.git"
+    "url": "https://github.com/trypton/youtube-api.git"
   },
   "keywords": [
     "youtube",
+    "youtube-api",
     "youtube-search"
   ],
   "scripts": {
