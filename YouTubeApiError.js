@@ -1,9 +1,9 @@
 /**
- * @file YouTube error class
+ * @file YouTube API error class
  */
 
 /**
- * @class Creates new YouTube error
+ * @class Creates new YouTube API error
  * @extends Error
  */
 export default class YouTubeApiError extends Error {
