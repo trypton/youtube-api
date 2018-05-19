@@ -1,9 +1,17 @@
-import { YouTubeError } from './youtubeError.js';
+/**
+ * @file Perform search through YouTube videos
+ */
+
+import { YouTubeError } from './YouTubeError.js';
 
 const isAbortControllerSupported = typeof AbortController === 'function';
 
-export class YoutubeSearch {
+/**
+ * @class Creates YouTube search object
+ */
+export default class YouTubeSearch {
     /**
+     * YouTube API search URL
      * @static
      */
     static get API_URL() {
@@ -11,6 +19,7 @@ export class YoutubeSearch {
     }
 
     /**
+     * Request timeout in ms
      * @static
      */
     static get REQUEST_TIMEOUT() {
@@ -30,7 +39,7 @@ export class YoutubeSearch {
 
     /**
      * @param {Object} options - YouTube API parameters
-     * @constructor
+     * @constructs
      */
     constructor(options = {}) {
         this.options = { ...options };
@@ -38,7 +47,7 @@ export class YoutubeSearch {
         /**
          * @private
          */
-        this._requestTimeout = 'timeout' in this.options ? this.options.timeout : YoutubeSearch.REQUEST_TIMEOUT;
+        this._requestTimeout = 'timeout' in this.options ? this.options.timeout : YouTubeSearch.REQUEST_TIMEOUT;
         delete this.options.timeout;
 
         /**
@@ -136,7 +145,7 @@ export class YoutubeSearch {
         }
 
         const signal = this._abortController && this._abortController.signal;
-        const url = YoutubeSearch.API_URL + YoutubeSearch.makeQueryString(params);
+        const url = YouTubeSearch.API_URL + YouTubeSearch.makeQueryString(params);
 
         let response;
         try {
