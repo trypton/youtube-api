@@ -12,7 +12,8 @@
   "keywords": [
     "youtube",
     "youtube-api",
-    "youtube-search"
+    "youtube-search",
+    "youtube-video"
   ],
   "scripts": {
     "lint": "yarn eslint .",
@@ -27,6 +28,6 @@
     "prettier": "^1.11.1"
   },
   "bugs": {
-    "url": "https://github.com/trypton/youtubesearch/issues"
+    "url": "https://github.com/trypton/youtube-api/issues"
   }
 }
