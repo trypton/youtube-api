@@ -2,7 +2,7 @@
  * @file YouTube API base class
  */
 
-import YouTubeApiError from './YouTubeApiError.js';
+import { YouTubeError, YouTubeApiError } from './YouTubeError.js';
 
 const isAbortControllerSupported = typeof AbortController === 'function';
 
@@ -26,7 +26,7 @@ export default class YouTubeApi {
      */
     static makeQueryString(params = {}) {
         return Object.keys(params)
-            .map(param => `${param}=` + encodeURIComponent(params[param]))
+            .map(param => encodeURIComponent(param) + '=' + encodeURIComponent(params[param]))
             .join('&');
     }
 
@@ -41,6 +41,11 @@ export default class YouTubeApi {
 
         this.options = { ...options };
 
+        if (this.options.access_token) {
+            this.accessToken = this.options.access_token;
+            delete this.options.access_token;
+        }
+
         /**
          * @private
          */
@@ -51,15 +56,6 @@ export default class YouTubeApi {
          * @private
          */
         this.abortController = null;
-    }
-
-    /**
-     * YouTube API endpoint URL.
-     * Must be defined in inherited class.
-     * @static
-     */
-    get url() {
-        throw new ReferenceError('API endpoint URL is not defined.');
     }
 
     /**
@@ -74,12 +70,34 @@ export default class YouTubeApi {
     }
 
     /**
+     * YouTube API endpoint URL.
+     * Must be defined in inherited class.
+     * @private
+     */
+    get url() {
+        throw new ReferenceError('API endpoint URL is not defined.');
+    }
+
+    /**
+     * Add path to the API endpoint.
+     * @param {String} path - Path that should be added to the URL
+     * @returns {String} - New URL
+     * @private
+     */
+    at(...path) {
+        return (
+            this.url.replace(/\/+$/, '') + (path.length ? '/' : '') + path.map(at => encodeURIComponent(at)).join('/')
+        );
+    }
+
+    /**
      * Make request to [YouTube API]{@link https://developers.google.com/youtube/v3/docs/}
+     * @param {String} url - API endpoint URL
      * @param {Object} params - Parameters the request should be performed with
      * @returns {Promise}
      * @private
      */
-    async makeApiRequest(params = {}) {
+    async makeApiRequest({ url = this.url, params = {} } = {}) {
         let timeoutId;
         const timeout = new Promise((resolve, reject) => {
             timeoutId = setTimeout(() => {
@@ -87,16 +105,24 @@ export default class YouTubeApi {
             }, this.requestTimeout);
         });
 
-        if (!this.abortController && isAbortControllerSupported) {
+        if (isAbortControllerSupported) {
             this.abortController = new AbortController();
         }
 
         const signal = this.abortController && this.abortController.signal;
-        const url = this.url + '?' + YouTubeApi.makeQueryString(params);
+        const headers = {};
+        if (this.accessToken) {
+            headers['Authorization'] = `Bearer ${this.accessToken}`;
+        }
+
+        const query = YouTubeApi.makeQueryString({ ...this.options, ...params });
+        if (query) {
+            url += `?${query}`;
+        }
 
         let response;
         try {
-            response = await Promise.race([fetch(url, { signal }), timeout]);
+            response = await Promise.race([fetch(url, { headers, signal }), timeout]);
         } catch (e) {
             // Ignore errors caused by aborting request
             if (e.name === 'AbortError') {
@@ -107,15 +133,17 @@ export default class YouTubeApi {
 
         clearTimeout(timeoutId);
 
-        const data = await response.json();
+        const contentType = response.headers.get('content-type');
+        const isJson = contentType.includes('application/json');
 
         if (!response.ok) {
+            const data = isJson ? await response.json() : await response.text();
             if (data && data.error) {
                 throw new YouTubeApiError(data.error);
             }
-            throw new Error(response.statusText);
+            throw new YouTubeError(data || response.statusText || 'Status: ' + response.status);
         }
 
-        return data;
+        return isJson ? await response.json() : await response.blob();
     }
 }

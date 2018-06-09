@@ -29,7 +29,7 @@ export default class YouTubeSearch extends YouTubeApi {
     }
 
     /**
-     * YouTube API search URL
+     * YouTube API search endpoint
      */
     get url() {
         return 'https://www.googleapis.com/youtube/v3/search';
@@ -62,7 +62,6 @@ export default class YouTubeSearch extends YouTubeApi {
         let nextPageToken = this.options.pageToken;
 
         const params = {
-            ...this.options,
             q: this.query
         };
 
@@ -71,7 +70,7 @@ export default class YouTubeSearch extends YouTubeApi {
                 params.pageToken = nextPageToken;
             }
 
-            const result = await this.makeApiRequest(params);
+            const result = await this.makeApiRequest({ params });
 
             // Finish the generator if no result was returned
             if (!result) {

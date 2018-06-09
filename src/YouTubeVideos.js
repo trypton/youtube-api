@@ -40,7 +40,7 @@ export default class YouTubeVideos extends YouTubeApi {
     }
 
     /**
-     * YouTube API search URL
+     * YouTube API videos endpoint
      */
     get url() {
         return 'https://www.googleapis.com/youtube/v3/videos';
@@ -54,12 +54,7 @@ export default class YouTubeVideos extends YouTubeApi {
      */
     list(id) {
         id = Array.isArray(id) ? id : [id];
-
-        const params = {
-            ...this.options,
-            id: id.join(',')
-        };
-
-        return this.makeApiRequest(params);
+        const params = { id: id.join(',') };
+        return this.makeApiRequest({ params });
     }
 }
