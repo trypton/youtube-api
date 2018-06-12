@@ -30,6 +30,7 @@ export default class YouTubeSearch extends YouTubeApi {
 
     /**
      * YouTube API search endpoint
+     * @private
      */
     get url() {
         return 'https://www.googleapis.com/youtube/v3/search';

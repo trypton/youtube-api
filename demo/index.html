@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>YouTube API demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <input name="query">
+    <button type="button" onclick="doSearch();">Search</button>
+
+    <script type="module">
+        /**
+         * DISCLAIMER: THIS IS A DEMO TO SHOW A GENERAL APPROACH
+         * PLEASE DON'T USE THIS CODE IN PRODUCTION
+         */
+        import YouTubeSearch from './../src/YouTubeSearch.js';
+        import YouTubeVideos from './../src/YouTubeVideos.js';
+        import YouTubeCaptions from './../src/YouTubeCaptions.js';
+
+        const options = {
+            key: 'YOUR_API_KEY'
+        };
+
+        const searcher = new YouTubeSearch({
+            ...options,
+            part: 'snippet',
+            type: 'video',
+            videoCaption: 'closedCaption'
+        });
+
+        const query = document.getElementsByName('query').item(0);
+
+        // Check if access token is available
+        const auth = window.localStorage.getItem('youtube-auth');
+        const params = auth ? JSON.parse(auth) : {};
+
+        window.doSearch = () => {
+            // Authorization
+            if (!params.access_token) {
+                window.addEventListener('auth-success', function onSuccess(e) {
+                    // Update token
+                    params.access_token = e.detail.params.access_token;
+
+                    // Store data
+                    window.localStorage.setItem('youtube-auth', JSON.stringify(e.detail.params));
+
+                    // Remove listener
+                    window.removeEventListener('auth-success', onSuccess);
+
+                    // Try again
+                    window.doSearch();
+                });
+
+                window.addEventListener('auth-fail', function onFail(e) {
+                    // Handle error here...
+
+                    // You can also use `this.handleEvent` to add and remove listeners
+                    window.removeEventListener('auth-fait', onFail);
+                });
+
+                // Open new window to perform authorization
+                window.open('./oauth.html', 'Google Authorization', 'width=800,height=600,resizable,scrollbars=yes,status=1');
+                return;
+            }
+
+            // Abort the previous request
+            searcher.abort();
+
+            // Search for videos
+            searcher.search(query.value).then(res => {
+                // Get array of found video ids
+                const ids = res.map(video => video.id.videoId);
+
+                // Retrieve some details
+                const videos = new YouTubeVideos({ ...options, part: 'id' });
+                videos.list(ids).then(res => {
+                    console.log(res);
+                });
+
+                // Download caption track of the first video
+                // Use access token here instead of API key
+                const captions = new YouTubeCaptions({ access_token: params.access_token });
+
+                // First of all, retrieve caption id
+                captions.list(ids[0], 'snippet').then(res => {
+                    captions.download(res.items[0].id).then(blob => {
+                        const reader = new FileReader();
+                        reader.addEventListener('loadend', () => {
+                            console.log(reader.result);
+                        });
+                        reader.readAsText(blob);
+                    });
+                });
+            }).catch(e => {
+                // Invalid credentials - if access token expired
+                // Google also provides `expires` param in authorization response
+                // You can use it before sending request
+                if (e.code === 401) {
+                    delete params.access_token;
+                    window.doSearch();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

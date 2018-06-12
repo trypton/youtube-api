@@ -1,11 +1,13 @@
-# Search for YouTube videos
+# YouTube API
 
-This is a small ES6 module to perform a search through YouTube videos.
+This is a small library with ES6 modules to work with YouTube API.
 
 ## Usage
 
+### Search for videos
+
 ```javascript
-import { YoutubeSearch } from 'youtubesearch';
+import { YoutubeSearch } from 'youtube-api';
 
 const options = {
   key: 'YOUTUBE_API_KEY',
@@ -18,7 +20,6 @@ async function search(searcher, query) {
     return await searcher.search(query);
   } catch (e) {
     // Handle error
-    return null;
   }
 }
 
@@ -35,14 +36,68 @@ const next10Videos = search(youtubeSearcher, 'search_query');
 
 You can call `.search()` method with the same search query string in order to get the next page of found videos.
 
-## Google API Key
+### Video details
 
-You need to get [API key](https://developers.google.com/maps/documentation/javascript/get-api-key) in order to search YouTube for videos.
+Retrieve a list of videos with details.
+
+```javascript
+import { YoutubeVideos } from 'youtube-api';
+
+const options = {
+  key: 'YOUTUBE_API_KEY'
+};
+
+// Array of video ids
+const videoId = ['videoId'];
+
+const videos = new YouTubeVideos({ ...options, part: 'id' });
+videos.list(videoId).then(res => {
+    console.log(res);
+});
+```
+
+### Captions
+
+You can retrieve a list of video captions or download a particular caption. Please note that downloading captions requires authorization.
+
+```javascript
+import { YoutubeCaptions } from 'youtube-api';
+
+const options = {
+  access_token: 'YOUTUBE_ACCESS_TOKEN'
+};
+
+// Video ID
+const videoId = 'videoId';
+
+const captions = new YoutubeCaptions(options);
+
+// The first parameter is string with video id
+// The second parameter is part. May be 'id' or 'snippet'.
+// https://developers.google.com/youtube/v3/docs/captions/list
+captions.list(videoId, 'snippet').then(res => {
+    if (res.items.length) {
+        // Retrieve the first caption track
+        captions.download(res.items[0].id).then(blob => {
+            // returns Blob
+        });
+    }
+});
+```
+
+### Authorization
+
+Some API requests require authorization. In order to obtain access token you can use `YouTubeAuth` class. It has `.signIn({ redirect_uri })` method that redirects to Google authentication service. After authentication the service redirects to the `redirect_uri` URL. That URL contains hash with response from the service. Use `.validate()` method in order to parse and validate that response and obtain access token. Now you can store the token and use it for requests. See [example](demo/index.html).
 
 ## Options
 
-Options object may contain any of supported YouTube API [parameters](https://developers.google.com/youtube/v3/docs/search/list).
-`q` parameter will be replaced with search query string of the `.search()` method.
+All class constructors have options parameter. It should have either `key` or `access_token` key. See next section for details.
+
+Options object may contain any of supported YouTube API parameters. See particular [YouTube API reference](https://developers.google.com/youtube/v3/docs/) page for more details.
+
+## Google API Key
+
+You need to create [API key](https://developers.google.com/youtube/registering_an_application) in order to perform YouTube API requests. Some requests require authorization. In that case you need to create OAuth 2 credentials and use `YouTubeAuth` class to obtain access token.
 
 ## Timeout
 
@@ -51,26 +106,19 @@ Request timeout is `5000ms` by default. You can change it with `options.timeout`
 ```javascript
 const options = {
   key: 'YOUTUBE_API_KEY',
-  part: 'snippet',
+  // Number of milliseconds
   timeout: 3000
 };
 ```
 
 ## Aborting request
 
-You can abort a search request by calling `.abort()` method.
+You can abort a request by calling `.abort()` method.
 
 ```javascript
-async function search(searcher, query) {
-  // if we're not interested in the previous search results anymore
-  // abort a previous request if it exists and is not finished
-  searcher.abort();
-
-  try {
-    return await searcher.search(query);
-  } catch (e) {
-    // Handle error
-    return null;
-  }
-}
+const searcher = new YoutubeSearch(options);
+searcher.search(query).then(results => { ... });
+// Abort the previous request
+searcher.abort();
+searcher.search(query).then(results => { ... });
 ```

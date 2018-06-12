@@ -1,36 +1,60 @@
 /**
- * @file Perform YouTube OAuth2 authentication
+ * @file Perform YouTube OAuth2 authorization
  */
 
 import YouTubeApi from './YouTubeApi.js';
 import { YouTubeAuthError } from './YouTubeError.js';
 
 /**
- * @class Creates YouTubeAuth object
+ * @class YouTube authorization with OAuth 2.0
  * @link https://developers.google.com/youtube/v3/guides/auth/client-side-web-apps
  * @extends YouTubeApi
  */
 export default class YouTubeAuth extends YouTubeApi {
+    /**
+     * Default access scope. Manage your YouTube account.
+     * @static
+     */
     static get SCOPE_DEFAULT() {
         return 'https://www.googleapis.com/auth/youtube';
     }
 
+    /**
+     * Force SSL access scope. Manage your YouTube account.
+     * @static
+     */
     static get SCOPE_DEFAULT_SSL() {
         return 'https://www.googleapis.com/auth/youtube.force-ssl';
     }
 
+    /**
+     * Read only access scope. View your YouTube account.
+     * @static
+     */
     static get SCOPE_READONLY() {
         return 'https://www.googleapis.com/auth/youtube.readonly';
     }
 
+    /**
+     * Upload access scope. Manage your YouTube videos.
+     * @static
+     */
     static get SCOPE_UPLOAD() {
         return 'https://www.googleapis.com/auth/youtube.upload';
     }
 
+    /**
+     * Partner access scope. View and manage your assets and associated content on YouTube.
+     * @static
+     */
     static get SCOPE_YOUTUBEPARTNER() {
         return 'https://www.googleapis.com/auth/youtubepartner';
     }
 
+    /**
+     * Partner audit access scope. View private information of your YouTube channel relevant during the audit process with a YouTube partner.
+     * @static
+     */
     static get SCOPE_YOUTUBEPARTNER_AUDIT() {
         return 'https://www.googleapis.com/auth/youtubepartner-channel-audit';
     }

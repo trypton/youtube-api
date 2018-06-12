@@ -1,4 +1,4 @@
 node_modules
 .vscode
-index.html
+.env
 yarn-error.log*

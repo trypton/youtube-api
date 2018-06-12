@@ -12,6 +12,7 @@ import YouTubeApi from './YouTubeApi.js';
 export default class YouTubeVideos extends YouTubeApi {
     /**
      * List of supported video parts with quota cost
+     * @static
      */
     static get PARTS() {
         return {
@@ -41,6 +42,7 @@ export default class YouTubeVideos extends YouTubeApi {
 
     /**
      * YouTube API videos endpoint
+     * @private
      */
     get url() {
         return 'https://www.googleapis.com/youtube/v3/videos';

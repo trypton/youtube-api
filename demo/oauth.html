@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>YouTube Authentication</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="module">
+        import YouTubeAuth from './../src/YouTubeAuth.js';
+
+        // Create auth object with OAuth client id
+        const auth = new YouTubeAuth({
+            'client_id': 'YOUR_CLIENT_ID'
+        });
+
+        // Google authentication service will redirect to this uri with hash added
+        // Read location hash as response
+        const response = window.location.hash.substring(1);
+
+        if (!response) {
+            // Perform authorization: redirect to auth service
+            auth.singIn({
+                redirect_uri: window.location.href
+            });
+        } else {
+            // Read the response from the auth service
+            auth.validate(response).then(params => {
+                // Notify the parent window
+                const event = new CustomEvent('auth-success', { detail: { params } });
+                window.opener.dispatchEvent(event);
+
+                // Close the window
+                window.close();
+            }).catch(error => {
+                const event = new CustomEvent('auth-fail', { detail: { error } });
+                window.opener.dispatchEvent(event);
+                window.close();
+            });
+        }
+    </script>
+</head>
+<body>
+</body>
+</html>

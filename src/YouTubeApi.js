@@ -39,20 +39,28 @@ export default class YouTubeApi {
             throw new TypeError('YouTubeApi must not be constructed directly.');
         }
 
+        // Clone options to prevent modifications
         this.options = { ...options };
 
+        // Store access token
         if (this.options.access_token) {
+            /**
+             * Access token
+             * @private
+             */
             this.accessToken = this.options.access_token;
             delete this.options.access_token;
         }
 
         /**
+         * Request timeout
          * @private
          */
         this.requestTimeout = 'timeout' in this.options ? this.options.timeout : YouTubeApi.REQUEST_TIMEOUT;
         delete this.options.timeout;
 
         /**
+         * Instance of AbortController if supported
          * @private
          */
         this.abortController = null;
@@ -71,7 +79,7 @@ export default class YouTubeApi {
 
     /**
      * YouTube API endpoint URL.
-     * Must be defined in inherited class.
+     * Must be overridden in inherited class.
      * @private
      */
     get url() {
@@ -79,8 +87,8 @@ export default class YouTubeApi {
     }
 
     /**
-     * Add path to the API endpoint.
-     * @param {String} path - Path that should be added to the URL
+     * Append path segment to the API endpoint
+     * @param {String} path - Path segment that should be appended to the URL
      * @returns {String} - New URL
      * @private
      */
@@ -92,8 +100,9 @@ export default class YouTubeApi {
 
     /**
      * Make request to [YouTube API]{@link https://developers.google.com/youtube/v3/docs/}
-     * @param {String} url - API endpoint URL
-     * @param {Object} params - Parameters the request should be performed with
+     * @param {Object} options - Request options
+     * @param {String} options.url - API endpoint URL
+     * @param {Object} options.params - Parameters the request should be performed with
      * @returns {Promise}
      * @private
      */

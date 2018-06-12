@@ -21,6 +21,7 @@ export default class YouTubeCaptions extends YouTubeApi {
 
     /**
      * YouTube API captions endpoint
+     * @private
      */
     get url() {
         return 'https://www.googleapis.com/youtube/v3/captions';
