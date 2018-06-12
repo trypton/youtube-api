@@ -12,6 +12,22 @@ import { YouTubeError } from './YouTubeError.js';
  */
 export default class YouTubeCaptions extends YouTubeApi {
     /**
+     * Id part of caption
+     * @static
+     */
+    static get PART_ID() {
+        return 'id';
+    }
+
+    /**
+     * Snippet part of caption
+     * @static
+     */
+    static get PART_SNIPPET() {
+        return 'snippet';
+    }
+
+    /**
      * SubViewer subtitle
      * @static
      */
