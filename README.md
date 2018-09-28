@@ -85,19 +85,19 @@ captions.list(videoId, 'snippet').then(res => {
 });
 ```
 
-### Authorization
-
-Some API requests require authorization. In order to obtain access token you can use `YouTubeAuth` class. You need to set your `client_id` and `redirect_uri` along with other optional parameters. For `access_type=offline` the `client_secret` is also required. There is `.createAuthUrl()` method that creates an URL to Google authentication service. Redirect to that URL and after authentication the service redirects back to the `redirect_uri` with the response in hash or query string. Use `.extractResponseFromCallbackUrl()` static method in order to parse the response and `.fetchAccessTokenWithResponse(response)` method to obtain access token. Now you can store the token and use it for requests. See [Google guide](https://developers.google.com/youtube/v3/guides/authentication) and an [example](demo/index.html).
-
 ## Options
 
-All class constructors have options parameter. It should have either `key` or `access_token` key. See next section for details.
+All class constructors have options parameter. It should have either `key` or `access_token` key. See next sections for details.
 
 Options object may contain any of supported YouTube API parameters. See particular [YouTube API reference](https://developers.google.com/youtube/v3/docs/) page for more details.
 
 ## Google API Key
 
 You need to create [API key](https://developers.google.com/youtube/registering_an_application) in order to perform YouTube API requests. Some requests require authorization. In that case you need to create OAuth 2 credentials and use `YouTubeAuth` class to obtain access token.
+
+### Authorization
+
+Some API requests require authorization. In order to obtain access token you can use `YouTubeAuth` class. There is `YouTubeAuth.createAuthUrl(params)` static method that creates an URL to Google authentication service. You need to pass your `client_id` and `redirect_uri` along with other optional parameters to it. Redirect to the returned URL and after authentication the service redirects back to the `redirect_uri` with the response in hash or query string (depends on access type). For `access_type=offline` the `client_secret` is required. Then use `.fetchAccessTokenWithCallbackUrl(callbackUrl)` method in order to obtain access token. Now you can store the token and use it for requests instead of API key. See [Google guide](https://developers.google.com/youtube/v3/guides/authentication) and an [example](demo/index.html).
 
 ## Timeout
 
