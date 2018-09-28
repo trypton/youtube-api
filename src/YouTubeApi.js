@@ -25,9 +25,9 @@ export default class YouTubeApi {
      * @static
      */
     static makeQueryString(params = {}) {
-        return Object.keys(params)
-            .map(param => encodeURIComponent(param) + '=' + encodeURIComponent(params[param]))
-            .join('&');
+        const queryParams = new URLSearchParams();
+        Object.keys(params).forEach(param => queryParams.set(param, params[param]));
+        return queryParams.toString();
     }
 
     /**
@@ -106,7 +106,8 @@ export default class YouTubeApi {
      * @returns {Promise}
      * @private
      */
-    async makeApiRequest({ url = this.url, params = {} } = {}) {
+    async makeApiRequest({ url = this.url, method = 'GET', params = {} } = {}) {
+        // Request timeout
         let timeoutId;
         const timeout = new Promise((resolve, reject) => {
             timeoutId = setTimeout(() => {
@@ -114,24 +115,31 @@ export default class YouTubeApi {
             }, this.requestTimeout);
         });
 
-        if (isAbortControllerSupported) {
-            this.abortController = new AbortController();
-        }
+        // Allow to abort request if supported
+        const signal =
+            isAbortControllerSupported && (this.abortController = new AbortController()) && this.abortController.signal;
 
-        const signal = this.abortController && this.abortController.signal;
+        // Authorization with access token
         const headers = {};
         if (this.accessToken) {
             headers['Authorization'] = `Bearer ${this.accessToken}`;
         }
 
-        const query = YouTubeApi.makeQueryString({ ...this.options, ...params });
-        if (query) {
-            url += `?${query}`;
+        // Add request params to URL
+        if (method === 'GET') {
+            const query = YouTubeApi.makeQueryString({ ...this.options, ...params });
+            if (query) {
+                url += `?${query}`;
+            }
         }
 
+        // POST request
+        const body = method === 'POST' ? JSON.stringify({ ...this.options, ...params }) : null;
+
+        // Send request
         let response;
         try {
-            response = await Promise.race([fetch(url, { headers, signal }), timeout]);
+            response = await Promise.race([fetch(url, { method, headers, body, signal }), timeout]);
         } catch (e) {
             // Ignore errors caused by aborting request
             if (e.name === 'AbortError') {
