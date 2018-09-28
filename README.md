@@ -87,7 +87,7 @@ captions.list(videoId, 'snippet').then(res => {
 
 ### Authorization
 
-Some API requests require authorization. In order to obtain access token you can use `YouTubeAuth` class. It has `.signIn({ redirect_uri })` method that redirects to Google authentication service. After authentication the service redirects to the `redirect_uri` URL. That URL contains hash with response from the service. Use `.validate()` method in order to parse and validate that response and obtain access token. Now you can store the token and use it for requests. See [example](demo/index.html).
+Some API requests require authorization. In order to obtain access token you can use `YouTubeAuth` class. You need to set your `client_id` and `redirect_uri` along with other optional parameters. For `access_type=offline` the `client_secret` is also required. There is `.createAuthUrl()` method that creates an URL to Google authentication service. Redirect to that URL and after authentication the service redirects back to the `redirect_uri` with the response in hash or query string. Use `.extractResponseFromCallbackUrl()` static method in order to parse the response and `.fetchAccessTokenWithResponse(response)` method to obtain access token. Now you can store the token and use it for requests. See [Google guide](https://developers.google.com/youtube/v3/guides/authentication) and an [example](demo/index.html).
 
 ## Options
 
