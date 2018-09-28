@@ -50,6 +50,7 @@
 
         // Create your API key on [Google developers console](https://console.developers.google.com/)
         const apiKey = 'YOUR_API_KEY';
+        const clientId = 'YOUR_CLIENT_ID';
 
         const searcher = new YouTubeSearch({
             key: apiKey,
@@ -91,9 +92,14 @@
                     reject(e.detail.error);
                 });
 
-                // Open auth window to perform authorization or refresh access token
-                const queryString = token && token.refresh_token ? `?refresh_token=${token.refresh_token}` : '';
-                window.open(`./oauth.html${queryString}`, 'Google Authorization', 'width=800,height=600,resizable,scrollbars=yes,status=1');
+                const oauthUrl = YouTubeAuth.createAuthUrl({
+                    client_id: clientId,
+                    redirect_uri: window.location.origin + '/demo/oauth.html',
+                    state: 'client_app_state'
+                });
+
+                // Open auth window to perform authorization
+                window.open(oauthUrl, 'Google Authorization', 'width=800,height=600,resizable,scrollbars=yes,status=1');
             }
         });
 

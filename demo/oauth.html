@@ -11,31 +11,22 @@
         // Create auth object with OAuth client id
         const auth = new YouTubeAuth({
             client_id: 'YOUR_CLIENT_ID',
-            redirect_uri: window.location.origin + window.location.pathname,
             state: 'client_app_state'
         });
 
-        // Extract response from the auth service
-        const response = YouTubeAuth.extractResponseFromCallbackUrl(window.location.href);
+        // Fetch access token
+        auth.fetchAccessTokenWithCallbackUrl(window.location.href).then(token => {
+            // Send token to the parent window
+            const event = new CustomEvent('auth-success', { detail: { token } });
+            window.opener.dispatchEvent(event);
 
-        if (!response) {
-            // Perform authorization: redirect to auth service
-            window.location = auth.createAuthUrl();
-        } else {
-            // Fetch access token
-            auth.fetchAccessTokenWithResponse(response).then(token => {
-                // Send token to the parent window
-                const event = new CustomEvent('auth-success', { detail: { token } });
-                window.opener.dispatchEvent(event);
-
-                // Close the window
-                window.close();
-            }).catch( error => {
-                const event = new CustomEvent('auth-fail', { detail: { error } });
-                window.opener.dispatchEvent(event);
-                window.close();
-            });
-        }
+            // Close the window
+            window.close();
+        }).catch( error => {
+            const event = new CustomEvent('auth-fail', { detail: { error } });
+            window.opener.dispatchEvent(event);
+            window.close();
+        });
     </script>
 </head>
 <body>
