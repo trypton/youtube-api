@@ -5,26 +5,54 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>YouTube API demo</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        .app {
+            display: flex;
+            min-height: 100%;
+        }
+        .app > div {
+            box-sizing: border-box;
+            flex: 1 0 50%;
+            padding: 20px;
+        }
+        .query-form {
+            border-right: 1px solid #ccc;
+        }
+    </style>
 </head>
 <body>
-    <input name="query">
-    <button type="button" onclick="doSearch();">Search</button>
+    <div class="app">
+        <div class="query-form">
+            <div>
+                <input name="query">
+                <button type="button" onclick="doSearch();">Search</button>
+            </div>
+            <div id="results"></div>
+        </div>
+        <div class="captions">
+            <pre id="captions"></pre>
+        </div>
+    </div>
 
     <script type="module">
         /**
          * DISCLAIMER: THIS IS A DEMO TO SHOW A GENERAL APPROACH
-         * PLEASE DON'T USE THIS CODE IN PRODUCTION
+         * DON'T USE THIS CODE IN PRODUCTION
          */
+        import YouTubeAuth from './../src/YouTubeAuth.js';
         import YouTubeSearch from './../src/YouTubeSearch.js';
         import YouTubeVideos from './../src/YouTubeVideos.js';
         import YouTubeCaptions from './../src/YouTubeCaptions.js';
 
-        const options = {
-            key: 'YOUR_API_KEY'
-        };
+        // Create your API key on [Google developers console](https://console.developers.google.com/)
+        const apiKey = 'YOUR_API_KEY';
 
         const searcher = new YouTubeSearch({
-            ...options,
+            key: apiKey,
             part: 'snippet',
             type: 'video',
             videoCaption: 'closedCaption'
@@ -32,39 +60,76 @@
 
         const query = document.getElementsByName('query').item(0);
 
-        // Check if access token is available
-        const auth = window.localStorage.getItem('youtube-auth');
-        const params = auth ? JSON.parse(auth) : {};
+        const getAccessToken = () => new Promise((resolve, reject) => {
+            // Read stored access token
+            let token;
+            try {
+                token = JSON.parse(window.localStorage.getItem('youtube-access-token'));
+            } catch (e) {
+                // token is not available
+            }
 
-        window.doSearch = () => {
-            // Authorization
-            if (!params.access_token) {
+            // Check if token exists and it is not expired
+            if (token && !YouTubeAuth.isAccessTokenExpired(token)) {
+                resolve(token);
+            } else {
                 window.addEventListener('auth-success', function onSuccess(e) {
-                    // Update token
-                    params.access_token = e.detail.params.access_token;
+                    token = e.detail.token;
 
-                    // Store data
-                    window.localStorage.setItem('youtube-auth', JSON.stringify(e.detail.params));
+                    // Store token
+                    window.localStorage.setItem('youtube-access-token', JSON.stringify(token));
 
                     // Remove listener
                     window.removeEventListener('auth-success', onSuccess);
 
-                    // Try again
-                    window.doSearch();
+                    // Return token
+                    resolve(token);
                 });
 
                 window.addEventListener('auth-fail', function onFail(e) {
-                    // Handle error here...
-
-                    // You can also use `this.handleEvent` to add and remove listeners
-                    window.removeEventListener('auth-fait', onFail);
+                    window.removeEventListener('auth-fail', onFail);
+                    reject(e.detail.error);
                 });
 
-                // Open new window to perform authorization
-                window.open('./oauth.html', 'Google Authorization', 'width=800,height=600,resizable,scrollbars=yes,status=1');
-                return;
+                // Open auth window to perform authorization or refresh access token
+                const queryString = token && token.refresh_token ? `?refresh_token=${token.refresh_token}` : '';
+                window.open(`./oauth.html${queryString}`, 'Google Authorization', 'width=800,height=600,resizable,scrollbars=yes,status=1');
             }
+        });
 
+        // Download caption track of the video
+        const downloadSubtitle = videoId => {
+            // Use access token here instead of API key
+            getAccessToken().then(token => {
+                const captions = new YouTubeCaptions({ access_token: token.access_token });
+
+                // First of all, retrieve caption id
+                captions.list(videoId, 'snippet').then(res => {
+                    captions.download(res.items[0].id).then(blob => {
+                        const reader = new FileReader();
+                        reader.addEventListener('loadend', () => {
+                            const captionsContainer = document.querySelector('#captions');
+                            while (captionsContainer.firstChild) {
+                                captionsContainer.firstChild.remove();
+                            }
+                            captionsContainer.appendChild(document.createTextNode(reader.result));
+                        });
+                        reader.readAsText(blob);
+                    });
+                });
+            }).catch(e => {
+                console.log('Authorization failed: ', e.message);
+            });
+        };
+
+        const results = document.querySelector('#results');
+        results.addEventListener('click', ev => {
+            if (ev.target.dataset && ev.target.dataset.videoId) {
+                downloadSubtitle(ev.target.dataset.videoId);
+            }
+        });
+
+        window.doSearch = () => {
             // Abort the previous request
             searcher.abort();
 
@@ -73,34 +138,29 @@
                 // Get array of found video ids
                 const ids = res.map(video => video.id.videoId);
 
-                // Retrieve some details
-                const videos = new YouTubeVideos({ ...options, part: 'id' });
-                videos.list(ids).then(res => {
+                // Retrieve some additional details
+                const videos = new YouTubeVideos({ key: apiKey, part: 'id,snippet' });
+                return videos.list(ids).then(res => {
                     console.log(res);
-                });
 
-                // Download caption track of the first video
-                // Use access token here instead of API key
-                const captions = new YouTubeCaptions({ access_token: params.access_token });
-
-                // First of all, retrieve caption id
-                captions.list(ids[0], 'snippet').then(res => {
-                    captions.download(res.items[0].id).then(blob => {
-                        const reader = new FileReader();
-                        reader.addEventListener('loadend', () => {
-                            console.log(reader.result);
-                        });
-                        reader.readAsText(blob);
+                    const list = document.createElement('ul');
+                    res.items.forEach(video => {
+                        const listItem = document.createElement('li');
+                        const downloadButton = document.createElement('button');
+                        downloadButton.appendChild(document.createTextNode('View subtitles'));
+                        downloadButton.dataset.videoId = video.id;
+                        listItem.appendChild(document.createTextNode(video.snippet.title));
+                        listItem.appendChild(downloadButton);
+                        list.appendChild(listItem);
                     });
+
+                    if (results.firstChild) {
+                        results.firstChild.remove();
+                    }
+                    results.appendChild(list);
                 });
             }).catch(e => {
-                // Invalid credentials - if access token expired
-                // Google also provides `expires` param in authorization response
-                // You can use it before sending request
-                if (e.code === 401) {
-                    delete params.access_token;
-                    window.doSearch();
-                }
+                console.log('Error occurred: ', e);
             });
         }
     </script>

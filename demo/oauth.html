@@ -10,28 +10,27 @@
 
         // Create auth object with OAuth client id
         const auth = new YouTubeAuth({
-            'client_id': 'YOUR_CLIENT_ID'
+            client_id: 'YOUR_CLIENT_ID',
+            redirect_uri: window.location.origin + window.location.pathname,
+            state: 'client_app_state'
         });
 
-        // Google authentication service will redirect to this uri with hash added
-        // Read location hash as response
-        const response = window.location.hash.substring(1);
+        // Extract response from the auth service
+        const response = YouTubeAuth.extractResponseFromCallbackUrl(window.location.href);
 
         if (!response) {
             // Perform authorization: redirect to auth service
-            auth.singIn({
-                redirect_uri: window.location.href
-            });
+            window.location = auth.createAuthUrl();
         } else {
-            // Read the response from the auth service
-            auth.validate(response).then(params => {
-                // Notify the parent window
-                const event = new CustomEvent('auth-success', { detail: { params } });
+            // Fetch access token
+            auth.fetchAccessTokenWithResponse(response).then(token => {
+                // Send token to the parent window
+                const event = new CustomEvent('auth-success', { detail: { token } });
                 window.opener.dispatchEvent(event);
 
                 // Close the window
                 window.close();
-            }).catch(error => {
+            }).catch( error => {
                 const event = new CustomEvent('auth-fail', { detail: { error } });
                 window.opener.dispatchEvent(event);
                 window.close();
