@@ -102,6 +102,10 @@ You need to create an [API key](https://developers.google.com/youtube/registerin
 
 Some API requests require authorization. In order to obtain access token to perform such requests you can use `YouTubeAuth` class. There is `YouTubeAuth.createAuthUrl(params)` static method that creates an URL to Google authorization server. You need to pass your `client_id` and `redirect_uri` along with other optional parameters to it and then redirect user to the returned URL. After authentication the server redirects back to the `redirect_uri` with the response in hash or query string (depends on access type). For `access_type=offline` the `client_secret` is required as well. Then use `.fetchAccessTokenWithCallbackUrl(callbackUrl)` method in order to obtain access token. If server returns an error an exception will be thrown. You can store the token and use it for requests instead of API key. For `access_type=offline` a refresh token will be also provided. Store it in a secure place and use for refreshing access token once it's expired. See [Google guide](https://developers.google.com/youtube/v3/guides/authentication) and an [example](demo/index.html) for details.
 
+### Revoke token
+
+Server side application can revoke access token with `.revokeToken(token)` method of `YouTubeAuth` instance. It accepts token obtained with one of `.fetchAccessToken*` methods. In order to revoke access token of client side application follow [documentation](https://developers.google.com/youtube/v3/guides/auth/client-side-web-apps#tokenrevoke).
+
 ## Timeout
 
 Request timeout is `5000ms` by default. You can change it with `options.timeout`.

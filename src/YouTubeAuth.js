@@ -36,6 +36,14 @@ export default class YouTubeAuth extends YouTubeApi {
     }
 
     /**
+     * Revoke token endpoint
+     * @static
+     */
+    static get URL_TOKEN_REVOKE() {
+        return 'https://accounts.google.com/o/oauth2/revoke';
+    }
+
+    /**
      * Default access scope. Manage your YouTube account.
      * @static
      */
@@ -262,6 +270,17 @@ export default class YouTubeAuth extends YouTubeApi {
         });
         token.created = Date.now();
         return token;
+    }
+
+    async revokeToken(token) {
+        if (!token.access_token) {
+            throw new TypeError('Invalid token');
+        }
+
+        await this.makeApiRequest({
+            url: YouTubeAuth.URL_TOKEN_REVOKE,
+            params: { token: token.access_token }
+        });
     }
 
     /**
