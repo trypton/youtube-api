@@ -12,7 +12,7 @@ import { YouTubeAuthError, YouTubeApiError } from './YouTubeError.js';
  */
 export default class YouTubeAuth extends YouTubeApi {
     /**
-     * Authentication URL
+     * Google OAuth 2 endpoint
      * @static
      */
     static get URL_AUTH() {
@@ -20,7 +20,7 @@ export default class YouTubeAuth extends YouTubeApi {
     }
 
     /**
-     * Token info URL
+     * Token info endpoint
      * @static
      */
     static get URL_TOKEN_INFO() {
@@ -28,7 +28,7 @@ export default class YouTubeAuth extends YouTubeApi {
     }
 
     /**
-     * Token URL
+     * Token endpoint
      * @static
      */
     static get URL_TOKEN() {
@@ -84,8 +84,8 @@ export default class YouTubeAuth extends YouTubeApi {
     }
 
     /**
-     * Create URL of Google Authentication service
-     * @param {Object} params - request params to Google authentication service
+     * Create URL of Google authorization server with request parameters
+     * @param {Object} params - request params
      * @param {String} params.client_id
      * @param {String} params.redirect_uri
      * @param {String} params.response_type
@@ -98,7 +98,7 @@ export default class YouTubeAuth extends YouTubeApi {
      * @returns {String} - URL to redirect
      * @static
      */
-    createAuthUrl(params) {
+    static createAuthUrl(params) {
         params = Object.assign(
             // Default values
             {
@@ -116,7 +116,7 @@ export default class YouTubeAuth extends YouTubeApi {
 
     /**
      * Extract response data from a callback URL
-     * @param {String} callbackUrl - full URL the authentication service redirected to (for example, window.location.href)
+     * @param {String} callbackUrl - full URL the authorization server redirected to (for example, window.location.href)
      * @returns {Object|null} - parsed hash or query string of URL. Returns null if there are no any params
      * @throws {YouTubeApiError} if response is empty
      * @static
@@ -156,7 +156,7 @@ export default class YouTubeAuth extends YouTubeApi {
         if (!token || !token.access_token || !token.created || !token.expires_in) {
             throw new TypeError('Invalid token');
         }
-        return token.created + (token.expires_in - 30) * 1000 < Date.now();
+        return parseInt(token.created, 10) + (parseInt(token.expires_in, 10) - 30) * 1000 < Date.now();
     }
 
     /**
@@ -174,7 +174,7 @@ export default class YouTubeAuth extends YouTubeApi {
         // access token can be ignored for authorization requests
         this.accessToken = null;
 
-        // remove request params from options since not of them are needed for the each request
+        // store request params and remove them from the options since not all of them are needed for the each request
         this.clientId = this.options.client_id;
         this.clientSecret = this.options.client_secret;
         this.redirectUri = this.options.redirect_uri;
@@ -189,15 +189,13 @@ export default class YouTubeAuth extends YouTubeApi {
     }
 
     /**
-     * Fetch access token
+     * Fetch access token with response from Google authorization server
      * @param {Object} response - response data
      * @returns {Promise} - resolves to access token object
      * @throws {TypeError} in case of missing params in URL
      * @public
      */
-    async fetchAccessTokenWithCallbackUrl(callbackUrl) {
-        const response = YouTubeAuth.extractResponseFromCallbackUrl(callbackUrl);
-
+    async fetchAccessTokenWithResponse(response) {
         // Perform some validation first
         this.validateResponse(response);
 
@@ -231,6 +229,7 @@ export default class YouTubeAuth extends YouTubeApi {
     async fetchAccessTokenWithRefreshToken(refreshToken) {
         const token = await this.makeApiRequest({
             url: YouTubeAuth.URL_TOKEN,
+            method: 'POST',
             params: {
                 client_id: this.clientId,
                 client_secret: this.clientSecret,
@@ -257,6 +256,7 @@ export default class YouTubeAuth extends YouTubeApi {
                 client_id: this.clientId,
                 client_secret: this.clientSecret,
                 redirect_uri: this.redirectUri,
+                access_type: 'offline',
                 grant_type: 'authorization_code'
             }
         });
@@ -266,7 +266,7 @@ export default class YouTubeAuth extends YouTubeApi {
 
     /**
      * Validate access token with online access type
-     * @param {String} accessToken - Access token from the authentication service
+     * @param {String} accessToken - Access token from the authorization server
      * @returns {Promise} resolves if validation passed, rejects otherwise
      * @public
      */
@@ -286,7 +286,7 @@ export default class YouTubeAuth extends YouTubeApi {
     }
 
     /**
-     * Validate authentication service callback response.
+     * Validate authorization server callback response.
      * @param {Object} response - response data
      * @returns {void}
      * @throws {YouTubeAuthError} if validation fails
