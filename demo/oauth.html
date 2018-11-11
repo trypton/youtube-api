@@ -3,10 +3,30 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>YouTube Authentication</title>
+    <title>YouTube Authorization</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script type="module">
-        import YouTubeAuth from './../src/YouTubeAuth.js';
+        /**
+         * DISCLAIMER: THIS IS A DEMO TO SHOW A GENERAL APPROACH
+         * DON'T USE THIS CODE IN PRODUCTION
+         */
+        import YouTubeAuth from '/src/YouTubeAuth.js';
+
+        // Send an event to the parent window with a token or an error
+        const dispatchEventAndCloseWindow = event => {
+            window.opener.dispatchEvent(event);
+            window.close();
+        };
+
+        const returnToken = token => {
+            const event = new CustomEvent('auth-success', { detail: { token } });
+            dispatchEventAndCloseWindow(event);
+        };
+
+        const returnError = error => {
+            const event = new CustomEvent('auth-fail', { detail: { error } });
+            dispatchEventAndCloseWindow(event);
+        };
 
         // Create auth object with OAuth client id
         const auth = new YouTubeAuth({
@@ -14,19 +34,11 @@
             state: 'client_app_state'
         });
 
-        // Fetch access token
-        auth.fetchAccessTokenWithCallbackUrl(window.location.href).then(token => {
-            // Send token to the parent window
-            const event = new CustomEvent('auth-success', { detail: { token } });
-            window.opener.dispatchEvent(event);
+        // Read response from URL
+        const response = YouTubeAuth.extractResponseFromCallbackUrl(window.location.href);
 
-            // Close the window
-            window.close();
-        }).catch( error => {
-            const event = new CustomEvent('auth-fail', { detail: { error } });
-            window.opener.dispatchEvent(event);
-            window.close();
-        });
+        // Fetch access token
+        auth.fetchAccessTokenWithResponse(response).then(returnToken).catch(returnError);
     </script>
 </head>
 <body>

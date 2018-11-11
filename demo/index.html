@@ -43,12 +43,12 @@
          * DISCLAIMER: THIS IS A DEMO TO SHOW A GENERAL APPROACH
          * DON'T USE THIS CODE IN PRODUCTION
          */
-        import YouTubeAuth from './../src/YouTubeAuth.js';
-        import YouTubeSearch from './../src/YouTubeSearch.js';
-        import YouTubeVideos from './../src/YouTubeVideos.js';
-        import YouTubeCaptions from './../src/YouTubeCaptions.js';
+        import YouTubeAuth from '/src/YouTubeAuth.js';
+        import YouTubeSearch from '/src/YouTubeSearch.js';
+        import YouTubeVideos from '/src/YouTubeVideos.js';
+        import YouTubeCaptions from '/src/YouTubeCaptions.js';
 
-        // Create your API key on [Google developers console](https://console.developers.google.com/)
+        // Create your API key or OAuth credentials on [Google developers console](https://console.developers.google.com/)
         const apiKey = 'YOUR_API_KEY';
         const clientId = 'YOUR_CLIENT_ID';
 
@@ -92,14 +92,22 @@
                     reject(e.detail.error);
                 });
 
-                const oauthUrl = YouTubeAuth.createAuthUrl({
-                    client_id: clientId,
-                    redirect_uri: window.location.origin + '/demo/oauth.html',
-                    state: 'client_app_state'
-                });
+                if (window.location.pathname.startsWith('/demo')) {
+                    // Client side app
+                    // Workflow: https://developers.google.com/youtube/v3/guides/auth/client-side-web-apps
+                    const oauthUrl = YouTubeAuth.createAuthUrl({
+                        client_id,
+                        redirect_uri: window.location.origin + '/demo/oauth.html',
+                        state: 'client_app_state'
+                    });
 
-                // Open auth window to perform authorization
-                window.open(oauthUrl, 'Google Authorization', 'width=800,height=600,resizable,scrollbars=yes,status=1');
+                    // Open auth window to perform authorization
+                    window.open(oauthUrl, 'Google Authorization', 'width=800,height=600,resizable,scrollbars=yes,status=1');
+                } else {
+                    // Server side app
+                    // Workflow: https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps
+                    window.open('/oauth', 'Google Authorization', 'width=800,height=600,resizable,scrollbars=yes,status=1');
+                }
             }
         });
 
@@ -109,8 +117,9 @@
             getAccessToken().then(token => {
                 const captions = new YouTubeCaptions({ access_token: token.access_token });
 
-                // First of all, retrieve caption id
+                // Retrieve caption id
                 captions.list(videoId, 'snippet').then(res => {
+                    // Download caption
                     captions.download(res.items[0].id).then(blob => {
                         const reader = new FileReader();
                         reader.addEventListener('loadend', () => {
@@ -128,6 +137,7 @@
             });
         };
 
+        // Handle download button click
         const results = document.querySelector('#results');
         results.addEventListener('click', ev => {
             if (ev.target.dataset && ev.target.dataset.videoId) {
@@ -135,11 +145,12 @@
             }
         });
 
+        // Search for videos
         window.doSearch = () => {
             // Abort the previous request
             searcher.abort();
 
-            // Search for videos
+            // Perform request
             searcher.search(query.value).then(res => {
                 // Get array of found video ids
                 const ids = res.map(video => video.id.videoId);
@@ -147,8 +158,6 @@
                 // Retrieve some additional details
                 const videos = new YouTubeVideos({ key: apiKey, part: 'id,snippet' });
                 return videos.list(ids).then(res => {
-                    console.log(res);
-
                     const list = document.createElement('ul');
                     res.items.forEach(video => {
                         const listItem = document.createElement('li');
@@ -166,7 +175,7 @@
                     results.appendChild(list);
                 });
             }).catch(e => {
-                console.log('Error occurred: ', e);
+                console.log('Error occurred:', e);
             });
         }
     </script>

@@ -2,7 +2,7 @@
   "name": "youtube-api",
   "version": "0.1.0",
   "description": "YouTube API library",
-  "main": "main.js",
+  "main": "index.js",
   "author": "Karen Ananiev",
   "license": "MIT",
   "repository": {
@@ -12,22 +12,38 @@
   "keywords": [
     "youtube",
     "youtube-api",
+    "youtube-auth",
+    "youtube-oauth",
+    "youtube-authentication",
+    "youtube-captions",
+    "youtube-captions-download",
     "youtube-search",
     "youtube-video"
   ],
   "scripts": {
     "lint": "yarn eslint .",
-    "lint:fix": "yarn lint --fix"
+    "lint:fix": "yarn lint --fix",
+    "build": "./node_modules/.bin/babel src/ -d lib/",
+    "build:babel-plugin": "./node_modules/.bin/babel --root dev/babel-plugin-add-imports/ dev/babel-plugin-add-imports/index.js -o dev/babel-plugin-add-imports/add-imports.js"
   },
   "devDependencies": {
+    "@babel/cli": "^7.1.2",
+    "@babel/core": "^7.1.2",
+    "@babel/helper-module-imports": "^7.0.0",
+    "@babel/preset-env": "^7.1.0",
     "babel-eslint": "8.2.2",
     "eslint": "^4.19.1",
     "eslint-config-last": "0.0.5",
     "eslint-config-prettier": "2.9.0",
     "eslint-plugin-prettier": "2.6.0",
+    "express": "^4.16.3",
     "prettier": "^1.11.1"
   },
   "bugs": {
     "url": "https://github.com/trypton/youtube-api/issues"
+  },
+  "dependencies": {},
+  "optionalDependencies": {
+    "node-fetch": "^2.2.0"
   }
 }

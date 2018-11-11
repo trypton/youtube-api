@@ -1,6 +1,9 @@
 # YouTube API
 
-This is a small library with ES6 modules to work with YouTube API.
+This is a small library with no dependencies* to work with YouTube API.
+Can work either on client side or with nodejs.
+
+<small>*node-fetch is required in nodejs environment</small>
 
 ## Usage
 
@@ -28,10 +31,10 @@ const youtubeSearcher = new YoutubeSearch(options);
 // .search() method returns an array of videos
 // it's size less or equals maxResults
 // or 0 if there are no more results or request was aborted with .abort()
-const first10Videos = search(youtubeSearcher, 'search_query');
+const first10Videos = search(youtubeSearcher, 'search query');
 
 // calling .search() again with the same query string returns the next resulting page
-const next10Videos = search(youtubeSearcher, 'search_query');
+const next10Videos = search(youtubeSearcher, 'search query');
 ```
 
 You can call `.search()` method with the same search query string in order to get the next page of found videos.
@@ -93,11 +96,11 @@ Options object may contain any of supported YouTube API parameters. See particul
 
 ## Google API Key
 
-You need to create [API key](https://developers.google.com/youtube/registering_an_application) in order to perform YouTube API requests. Some requests require authorization. In that case you need to create OAuth 2 credentials and use `YouTubeAuth` class to obtain access token.
+You need to create an [API key](https://developers.google.com/youtube/registering_an_application) in order to perform YouTube API requests. Some requests require authorization. In that case you need to create OAuth 2 credentials and use `YouTubeAuth` class to obtain access token.
 
-### Authorization
+## Authorization
 
-Some API requests require authorization. In order to obtain access token you can use `YouTubeAuth` class. There is `YouTubeAuth.createAuthUrl(params)` static method that creates an URL to Google authentication service. You need to pass your `client_id` and `redirect_uri` along with other optional parameters to it. Redirect to the returned URL and after authentication the service redirects back to the `redirect_uri` with the response in hash or query string (depends on access type). For `access_type=offline` the `client_secret` is required. Then use `.fetchAccessTokenWithCallbackUrl(callbackUrl)` method in order to obtain access token. Now you can store the token and use it for requests instead of API key. See [Google guide](https://developers.google.com/youtube/v3/guides/authentication) and an [example](demo/index.html).
+Some API requests require authorization. In order to obtain access token to perform such requests you can use `YouTubeAuth` class. There is `YouTubeAuth.createAuthUrl(params)` static method that creates an URL to Google authorization server. You need to pass your `client_id` and `redirect_uri` along with other optional parameters to it and then redirect user to the returned URL. After authentication the server redirects back to the `redirect_uri` with the response in hash or query string (depends on access type). For `access_type=offline` the `client_secret` is required as well. Then use `.fetchAccessTokenWithCallbackUrl(callbackUrl)` method in order to obtain access token. If server returns an error an exception will be thrown. You can store the token and use it for requests instead of API key. For `access_type=offline` a refresh token will be also provided. Store it in a secure place and use for refreshing access token once it's expired. See [Google guide](https://developers.google.com/youtube/v3/guides/authentication) and an [example](demo/index.html) for details.
 
 ## Timeout
 
