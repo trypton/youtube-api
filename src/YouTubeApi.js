@@ -156,7 +156,11 @@ export default class YouTubeApi {
         if (!response.ok) {
             const data = isJson ? await response.json() : await response.text();
             if (data && data.error) {
-                throw new YouTubeApiError(data.error);
+                if (data.error.error_description) {
+                    throw new YouTubeError(data.error.error_description);
+                } else {
+                    throw new YouTubeApiError(data.error);
+                }
             }
             throw new YouTubeError(data || response.statusText || 'Status: ' + response.status);
         }
